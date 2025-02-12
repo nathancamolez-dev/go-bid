@@ -48,3 +48,7 @@ func MinChars(value string, n int) bool {
 func Matches(value string, rx *regexp.Regexp) bool {
 	return rx.MatchString(value)
 }
+
+func NonNegativeValue(value float64, n float64) bool {
+	return value > n
+}

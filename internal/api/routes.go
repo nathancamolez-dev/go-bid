@@ -12,12 +12,23 @@ func (api *Api) BindRoutes() {
 		middleware.Logger,
 		api.Sessions.LoadAndSave,
 	)
+
+	// csrfMiddleware := csrf.Protect([]byte(os.Getenv("GOBID_CSRF_KEY")), csrf.Secure(false))
+
+	// api.Router.Use(csrfMiddleware)
+
 	api.Router.Route("/api", func(r chi.Router) {
 		r.Route("/v1", func(r chi.Router) {
+			// r.Get("/csrftoken", api.HandleGetCSRFtoken) is commented for now as development
 			r.Route("/users/", func(r chi.Router) {
 				r.Post("/signup", api.handleSignupUser)
 				r.Post("/login", api.handleLoginUser)
 				r.With(api.AuthMiddleware).Post("/logout", api.handleLogout)
+			})
+
+			r.Route("/products", func(r chi.Router) {
+				r.Post("/", api.handleCreateProduct)
+
 			})
 		})
 
