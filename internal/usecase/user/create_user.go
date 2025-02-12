@@ -8,8 +8,8 @@ import (
 
 type CreateUserReq struct {
 	UserName string `json:"user_name"`
-	Password string `json:"password"`
 	Email    string `json:"email"`
+	Password string `json:"password"`
 	Bio      string `json:"bio"`
 }
 

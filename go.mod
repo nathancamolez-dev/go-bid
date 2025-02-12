@@ -3,6 +3,8 @@ module github.com/nathancamolez-dev/go-bid
 go 1.23.5
 
 require (
+	github.com/alexedwards/scs/pgxstore v0.0.0-20250206205117-b6793b4a9566
+	github.com/alexedwards/scs/v2 v2.8.0
 	github.com/go-chi/chi/v5 v5.2.1
 	github.com/google/uuid v1.6.0
 	github.com/jackc/pgx/v5 v5.7.2
