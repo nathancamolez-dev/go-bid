@@ -12,7 +12,16 @@ import (
 func (api *Api) handleCreateProduct(w http.ResponseWriter, r *http.Request) {
 	data, problems, err := jsonutils.DecodeValidJson[product.CreateProductReq](r)
 	if err != nil {
-		jsonutils.EncodeJson(w, r, http.StatusUnprocessableEntity, problems)
+		jsonutils.EncodeJson(w, r, http.StatusUnprocessableEntity, map[string]any{
+			"error": err.Error(),
+		})
+		if problems != nil {
+			jsonutils.EncodeJson(w, r, http.StatusUnprocessableEntity, map[string]any{
+				"error":    err.Error(),
+				"problems": problems,
+			})
+
+		}
 		return
 	}
 

@@ -17,7 +17,7 @@ var EmailRX = regexp.MustCompile(
 
 type Evaluator map[string]string
 
-func (e *Evaluator) AddfieldError(key, message string) {
+func (e *Evaluator) AddFieldError(key, message string) {
 	if *e == nil {
 		*e = make(map[string]string)
 	}
@@ -29,7 +29,7 @@ func (e *Evaluator) AddfieldError(key, message string) {
 
 func (e *Evaluator) CheckField(ok bool, key, message string) {
 	if !ok {
-		e.AddfieldError(key, message)
+		e.AddFieldError(key, message)
 	}
 }
 

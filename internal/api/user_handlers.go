@@ -12,9 +12,19 @@ import (
 func (api *Api) handleSignupUser(w http.ResponseWriter, r *http.Request) {
 	data, problems, err := jsonutils.DecodeValidJson[user.CreateUserReq](r)
 	if err != nil {
-		_ = jsonutils.EncodeJson(w, r, http.StatusUnprocessableEntity, problems)
+		jsonutils.EncodeJson(w, r, http.StatusUnprocessableEntity, map[string]any{
+			"error": err.Error(),
+		})
+		if problems != nil {
+			jsonutils.EncodeJson(w, r, http.StatusUnprocessableEntity, map[string]any{
+				"error":    err.Error(),
+				"problems": problems,
+			})
+
+		}
 		return
 	}
+
 	id, err := api.UserService.CreateUser(r.Context(),
 		data.UserName, data.Email, data.Password, data.Bio)
 	if err != nil {
@@ -34,7 +44,16 @@ func (api *Api) handleSignupUser(w http.ResponseWriter, r *http.Request) {
 func (api *Api) handleLoginUser(w http.ResponseWriter, r *http.Request) {
 	data, problems, err := jsonutils.DecodeValidJson[user.LoginUserReq](r)
 	if err != nil {
-		_ = jsonutils.EncodeJson(w, r, http.StatusUnprocessableEntity, problems)
+		jsonutils.EncodeJson(w, r, http.StatusUnprocessableEntity, map[string]any{
+			"error": err.Error(),
+		})
+		if problems != nil {
+			jsonutils.EncodeJson(w, r, http.StatusUnprocessableEntity, map[string]any{
+				"error":    err.Error(),
+				"problems": problems,
+			})
+
+		}
 		return
 	}
 

@@ -9,10 +9,10 @@ import (
 )
 
 func EncodeJson[T any](w http.ResponseWriter, r *http.Request, statusCode int, data T) error {
-	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Content-Type", "Application/json")
 	w.WriteHeader(statusCode)
 	if err := json.NewEncoder(w).Encode(data); err != nil {
-		return fmt.Errorf("failed to encode json %w", err)
+		return fmt.Errorf("!!failed to encode json %w", err)
 
 	}
 	return nil
@@ -21,11 +21,13 @@ func EncodeJson[T any](w http.ResponseWriter, r *http.Request, statusCode int, d
 func DecodeValidJson[T validator.Validator](r *http.Request) (T, map[string]string, error) {
 	var data T
 	if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
-		return data, nil, fmt.Errorf("decode json %w", err)
+		return data, nil, fmt.Errorf("failed to decode %w ", err)
 	}
+
 	if problems := data.Valid(r.Context()); len(problems) > 0 {
-		return data, problems, fmt.Errorf("invalid %T : %d problems", data, len(problems))
+		return data, problems, fmt.Errorf("invalid %T: %d problems", data, len(problems))
 	}
+
 	return data, nil, nil
 }
 

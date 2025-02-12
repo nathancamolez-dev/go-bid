@@ -2,7 +2,6 @@ package product
 
 import (
 	"context"
-	"strconv"
 	"time"
 
 	"github.com/google/uuid"
@@ -19,11 +18,6 @@ type CreateProductReq struct {
 }
 
 const minAuctionDuration = 2 * time.Hour
-
-func isFloat64(value string) bool {
-	_, err := strconv.ParseFloat(value, 64)
-	return err == nil
-}
 
 func (req CreateProductReq) Valid(ctx context.Context) validator.Evaluator {
 	var eval validator.Evaluator
