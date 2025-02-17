@@ -2,6 +2,7 @@ package api
 
 import (
 	"errors"
+	"fmt"
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
@@ -12,10 +13,11 @@ import (
 )
 
 func (api *Api) handleSubscribeToAuction(w http.ResponseWriter, r *http.Request) {
-	rawProductId := chi.URLParam(r, "proudct_id")
+	rawProductId := chi.URLParam(r, "product_id")
 
 	productId, err := uuid.Parse(rawProductId)
 	if err != nil {
+		fmt.Println("here")
 		jsonutils.EncodeJson(w, r, http.StatusBadRequest, map[string]any{
 			"message": "invalid uuid",
 		})
@@ -52,6 +54,27 @@ func (api *Api) handleSubscribeToAuction(w http.ResponseWriter, r *http.Request)
 		jsonutils.EncodeJson(w, r, http.StatusInternalServerError, map[string]any{
 			"message": "unexpected internal server error",
 		})
+	}
+
+	fmt.Println("here")
+
+	api.AuctionLobby.Lock()
+	room, ok := api.AuctionLobby.Rooms[productId]
+	api.AuctionLobby.Unlock()
+
+	if !ok {
+		jsonutils.EncodeJson(w, r, http.StatusBadRequest, map[string]any{
+			"message": "the auction has ended",
+		})
+	}
+
+	client := services.NewClient(room, conn, userId)
+
+	room.Register <- client
+
+	// go client.ReadEventLoop()
+	// go client.WriteEventLoop()
+	for {
 	}
 
 }
