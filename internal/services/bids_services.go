@@ -18,8 +18,8 @@ type BidsServices struct {
 
 var ErrBidIsToLow = errors.New("the bid value is too low")
 
-func NewBidsServices(pool *pgxpool.Pool) *BidsServices {
-	return &BidsServices{
+func NewBidsServices(pool *pgxpool.Pool) BidsServices {
+	return BidsServices{
 		pool:    pool,
 		queries: pgstore.New(pool),
 	}
