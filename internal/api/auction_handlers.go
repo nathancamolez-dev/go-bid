@@ -17,7 +17,7 @@ func (api *Api) handleSubscribeToAuction(w http.ResponseWriter, r *http.Request)
 
 	productId, err := uuid.Parse(rawProductId)
 	if err != nil {
-		fmt.Println("here")
+
 		jsonutils.EncodeJson(w, r, http.StatusBadRequest, map[string]any{
 			"message": "invalid uuid",
 		})
@@ -69,12 +69,10 @@ func (api *Api) handleSubscribeToAuction(w http.ResponseWriter, r *http.Request)
 	}
 
 	client := services.NewClient(room, conn, userId)
+	fmt.Println(client)
 
 	room.Register <- client
-
-	// go client.ReadEventLoop()
-	// go client.WriteEventLoop()
-	for {
-	}
+	go client.ReadEventLoop()
+	go client.WriteEventLoop()
 
 }

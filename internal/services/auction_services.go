@@ -14,6 +14,13 @@ import (
 type MessageKind int
 
 const (
+	maxMessageSize = 512
+	readDeadline   = 60 * time.Second
+	writeWait      = 10 * time.Second
+	pingPeriod     = (readDeadline * 9) / 10
+)
+
+const (
 	//Requests
 	PlaceBid MessageKind = iota
 
@@ -66,7 +73,7 @@ func (r *AuctionRoom) unregisterClient(c *Client) {
 }
 
 func (r *AuctionRoom) broadcastMessage(m Message) {
-	slog.Info("New messge recieved", "RoomID", r.Id, "message", m.Message, "user_id", m.UserID)
+	slog.Info("New message recieved", "RoomID", r.Id, "message", m.Message, "user_id", m.UserID)
 	switch m.Kind {
 	case PlaceBid:
 		bid, err := r.BidsServices.PlaceBid(r.Context, r.Id, m.UserID, m.Amount)
@@ -84,7 +91,11 @@ func (r *AuctionRoom) broadcastMessage(m Message) {
 		}
 
 		for id, client := range r.Clients {
-			newBidMessage := Message{Kind: NewBidPlaced, Message: "A new bid has been placed", Amount: bid.BidAmount}
+			newBidMessage := Message{
+				Kind:    NewBidPlaced,
+				Message: "A new bid has been placed",
+				Amount:  bid.BidAmount,
+			}
 			if id == m.UserID {
 				continue
 			}
@@ -127,7 +138,7 @@ func (r *AuctionRoom) Run() {
 	}
 }
 
-func NewAuctionRoom(ctx context.Context, id uuid.UUID, BidsService BidsServices) *AuctionRoom {
+func NewAuctionRoom(ctx context.Context, id uuid.UUID, BidsServices BidsServices) *AuctionRoom {
 	return &AuctionRoom{
 		Id:           id,
 		Broadcast:    make(chan Message),
@@ -135,7 +146,7 @@ func NewAuctionRoom(ctx context.Context, id uuid.UUID, BidsService BidsServices)
 		Unregister:   make(chan *Client),
 		Clients:      make(map[uuid.UUID]*Client),
 		Context:      ctx,
-		BidsServices: BidsService,
+		BidsServices: BidsServices,
 	}
 }
 
@@ -155,11 +166,6 @@ func NewClient(room *AuctionRoom, conn *websocket.Conn, userId uuid.UUID) *Clien
 	}
 }
 
-const (
-	maxMessageSize = 512
-	readDeadline   = 60 * time.Second
-)
-
 func (c *Client) ReadEventLoop() {
 	defer func() {
 		c.Room.Unregister <- c
@@ -178,14 +184,59 @@ func (c *Client) ReadEventLoop() {
 		m.UserID = c.UserId
 		err := c.Conn.ReadJSON(&m)
 		if err != nil {
-			if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
+			if websocket.IsUnexpectedCloseError(
+				err,
+				websocket.CloseGoingAway,
+				websocket.CloseAbnormalClosure,
+			) {
 				slog.Error("Unexpected close error", "error", err)
 			}
 
 			c.Room.Broadcast <- Message{Kind: InvalidJSON, Message: "This should be a valid json", UserID: m.UserID}
+
+			continue
 		}
 
 		c.Room.Broadcast <- m
 	}
 
+}
+
+func (c *Client) WriteEventLoop() {
+	ticker := time.NewTicker(pingPeriod)
+	defer func() {
+		ticker.Stop()
+		c.Conn.Close()
+	}()
+
+	for {
+		select {
+		case message, ok := <-c.Send:
+			if !ok {
+				c.Conn.WriteJSON(
+					Message{Kind: websocket.CloseMessage, Message: "Connection closed"},
+				)
+				return
+			}
+
+			if message.Kind == AuctionFinished {
+				close(c.Send)
+				return
+			}
+
+			err := c.Conn.WriteJSON(message)
+			if err != nil {
+				c.Room.Unregister <- c
+				return
+			}
+
+		case <-ticker.C:
+			c.Conn.SetWriteDeadline(time.Now().Add(writeWait))
+			if err := c.Conn.WriteMessage(websocket.PingMessage, nil); err != nil {
+				slog.Error("Unexpect write error", "error", err)
+				return
+			}
+
+		}
+	}
 }
